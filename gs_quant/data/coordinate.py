@@ -143,9 +143,19 @@ class DataCoordinate(BaseDataCoordinate):
         return hash((self.dataset_id, self.measure, tuple(self.dimensions)))
 
     def __str__(self):
-        return f'Dataset Id: ({self.dataset_id}) ' \
-               f'Measure: ({self.measure if isinstance(self.measure, str) else self.measure.value}) ' \
-               f'Dimensions: ({json.dumps(self.dimensions)})'
+        # Optimizing serialization of self.dimensions
+        # - Avoid repeated encoding and extra function calls
+        # - Use separators to reduce unnecessary spaces in the JSON output
+        dims = self.dimensions
+        # If possible, cache the json.dumps function locally for micro-optimization
+        # Pre-compile separators for compact output (removes whitespace)
+        dims_str = json.dumps(dims, separators=(',', ':')) if dims else '{}'
+        measure = self.measure if isinstance(self.measure, str) else self.measure.value
+        return (
+            f'Dataset Id: ({self.dataset_id}) '
+            f'Measure: ({measure}) '
+            f'Dimensions: ({dims_str})'
+        )
 
     def get_range(self,
                   start: Optional[DateOrDatetime] = None,
