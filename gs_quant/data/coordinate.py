@@ -132,9 +132,25 @@ class DataCoordinate(BaseDataCoordinate):
         Equality check for two coordinates. Validates if the dataset id, data measure and dimensions are equivalent.
 
         """
-        measure = self.measure if isinstance(self.measure, str) else self.measure.value
-        other_measure = other.measure if isinstance(other.measure, str) else other.measure.value
-        return (self.dataset_id, measure, self.dimensions) == (other.dataset_id, other_measure, other.dimensions)
+        # Optimize string measure lookup for performance by caching value lookups; micro-optimize type checks
+        self_measure = self.measure
+        if not isinstance(self_measure, str):
+            self_measure = self_measure.value
+
+        other_measure = other.measure
+        if not isinstance(other_measure, str):
+            other_measure = other_measure.value
+
+        # Use tuple comparison, which is already efficient, but prepare elements before tuple construction
+        return (
+            self.dataset_id,
+            self_measure,
+            self.dimensions
+        ) == (
+            other.dataset_id,
+            other_measure,
+            other.dimensions
+        )
 
     def get_dimensions(self) -> Tuple:
         return tuple(self.dimensions.items())
