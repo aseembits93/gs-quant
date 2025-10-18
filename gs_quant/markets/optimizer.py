@@ -595,7 +595,7 @@ class IndustryConstraint:
         :param maximum: maximum
         :param unit: the unit in which the min and max values are passed in with (defaults to percent)
         """
-        if unit not in [OptimizationConstraintUnit.PERCENT, OptimizationConstraintUnit.DECIMAL]:
+        if unit not in (OptimizationConstraintUnit.PERCENT, OptimizationConstraintUnit.DECIMAL):
             raise MqValueError('Industry constraints can only be set by percent or decimal.')
         self.__industry_name = industry_name
         self.__minimum = minimum
@@ -637,11 +637,17 @@ class IndustryConstraint:
         self.__unit = value
 
     def to_dict(self):
+        unit = self.__unit
+        minimum = self.__minimum
+        maximum = self.__maximum
+        if unit == OptimizationConstraintUnit.DECIMAL:
+            minimum *= 100
+            maximum *= 100
         return {
             'type': 'Industry',
-            'name': self.industry_name,
-            'min': self.minimum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.minimum,
-            'max': self.maximum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.maximum
+            'name': self.__industry_name,
+            'min': minimum,
+            'max': maximum
         }
 
     @classmethod
