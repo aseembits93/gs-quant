@@ -84,9 +84,10 @@ class BarMarkerProcessor(BaseProcessor):
         self.shape = ScaleShape.BAR
 
     def process(self):
-        start = self.children_data.get('start')
-        end = self.children_data.get('end')
-        if isinstance(start, ProcessorResult) and isinstance(end, ProcessorResult):
+        children_data = self.children_data
+        start = children_data.get('start')
+        end = children_data.get('end')
+        if type(start) is ProcessorResult and type(end) is ProcessorResult:
             if start.success and end.success:
                 self.value = ProcessorResult(True, {
                     'name': self.name,
