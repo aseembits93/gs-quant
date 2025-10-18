@@ -700,6 +700,7 @@ class FactorConstraint:
         """
         self.__factor = factor
         self.__max_exposure = max_exposure
+        self.__factor_name = factor.name
 
     @property
     def factor(self) -> Factor:
@@ -719,8 +720,8 @@ class FactorConstraint:
 
     def to_dict(self):
         return {
-            'factor': self.factor.name,
-            'exposure': self.max_exposure
+            'factor': self.__factor_name,
+            'exposure': self.__max_exposure
         }
 
     @classmethod
@@ -772,6 +773,14 @@ class FactorConstraint:
         all_constraints = factor_constraints_df.to_dict(orient='records')
 
         return [cls(factor=row.get('factor'), max_exposure=row.get('exposure')) for row in all_constraints]
+
+    @property
+    def factor(self) -> Factor:
+        return self.__factor
+
+    @property
+    def max_exposure(self) -> float:
+        return self.__max_exposure
 
 
 class OptimizerUniverse:
