@@ -1627,9 +1627,12 @@ class OptimizerStrategy:
         """
         if self.__result is None:
             raise MqValueError('Please run the optimization before calling this method')
-        if self.__result.get(target.value) is None:
+        result_data = self.__result.get(target.value)
+        if result_data is None:
             raise MqValueError(f'The optimization result does not contain {target.value} data')
-        cumulative_pnl = self.__result.get(target.value).get('cumulativePnl')
+        cumulative_pnl = result_data.get('cumulativePnl')
+        if isinstance(cumulative_pnl, list) and cumulative_pnl and isinstance(cumulative_pnl[0], dict):
+            return pd.DataFrame.from_records(cumulative_pnl)
         return pd.DataFrame(cumulative_pnl)
 
     def get_transaction_and_liquidity_constituents_performance(
