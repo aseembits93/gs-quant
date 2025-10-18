@@ -110,21 +110,19 @@ class User:
         emails = [email.lower() for email in emails] if emails else []
         companies = companies if companies else []
 
-        if not user_ids + names + emails + companies:
+        if not (user_ids or names or emails or companies):
             return []
-        user_ids = [id_[5:] if id_.startswith('guid:') else id_ for id_ in user_ids]
+        if user_ids:
+            user_ids = [id_[5:] if id_.startswith('guid:') else id_ for id_ in user_ids]
         results = GsUsersApi.get_users(user_ids=user_ids,
                                        user_names=names,
                                        user_emails=emails,
                                        user_companies=companies)
 
-        all_users = []
-        for user in results:
-            all_users.append(User(user_id=user.id,
-                                  name=user.name,
-                                  email=user.email,
-                                  company=user.company))
-        return all_users
+        return [User(user_id=user.id,
+                     name=user.name,
+                     email=user.email,
+                     company=user.company) for user in results]
 
     def save(self):
         raise NotImplementedError
