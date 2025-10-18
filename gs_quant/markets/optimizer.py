@@ -1178,19 +1178,72 @@ class ConstraintPriorities:
         self.__style_factor_exposures = value
 
     def to_dict(self) -> Dict:
-        as_dict = {
-            'minSectorWeights': self.min_sector_weights,
-            'maxSectorWeights': self.max_sector_weights,
-            'minIndustryWeights': self.min_industry_weights,
-            'maxIndustryWeights': self.max_industry_weights,
-            'minRegionWeights': self.min_region_weights,
-            'maxRegionWeights': self.max_region_weights,
-            'minCountryWeights': self.min_country_weights,
-            'maxCountryWeights': self.max_country_weights,
-            'styleExposures': self.style_factor_exposures
-        } if self is not None else {}
-        as_dict = {k: as_dict[k].value for k in as_dict.keys() if as_dict[k] is not None}
-        return as_dict if len(as_dict.keys()) > 0 else None
+        result = {}
+        min_sector = self.__min_sector_weights
+        if min_sector is not None:
+            result['minSectorWeights'] = min_sector.value
+        max_sector = self.__max_sector_weights
+        if max_sector is not None:
+            result['maxSectorWeights'] = max_sector.value
+        min_industry = self.__min_industry_weights
+        if min_industry is not None:
+            result['minIndustryWeights'] = min_industry.value
+        max_industry = self.__max_industry_weights
+        if max_industry is not None:
+            result['maxIndustryWeights'] = max_industry.value
+        min_region = self.__min_region_weights
+        if min_region is not None:
+            result['minRegionWeights'] = min_region.value
+        max_region = self.__max_region_weights
+        if max_region is not None:
+            result['maxRegionWeights'] = max_region.value
+        min_country = self.__min_country_weights
+        if min_country is not None:
+            result['minCountryWeights'] = min_country.value
+        max_country = self.__max_country_weights
+        if max_country is not None:
+            result['maxCountryWeights'] = max_country.value
+        style_factor = self.__style_factor_exposures
+        if style_factor is not None:
+            result['styleExposures'] = style_factor.value
+
+        return result if result else None
+
+    @property
+    def min_sector_weights(self):
+        return self.__min_sector_weights
+
+    @property
+    def max_sector_weights(self):
+        return self.__max_sector_weights
+
+    @property
+    def min_industry_weights(self):
+        return self.__min_industry_weights
+
+    @property
+    def max_industry_weights(self):
+        return self.__max_industry_weights
+
+    @property
+    def min_region_weights(self):
+        return self.__min_region_weights
+
+    @property
+    def max_region_weights(self):
+        return self.__max_region_weights
+
+    @property
+    def min_country_weights(self):
+        return self.__min_country_weights
+
+    @property
+    def max_country_weights(self):
+        return self.__max_country_weights
+
+    @property
+    def style_factor_exposures(self):
+        return self.__style_factor_exposures
 
 
 class OptimizerSettings:
