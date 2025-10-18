@@ -672,19 +672,45 @@ class IndustryConstraint:
         >>>                   {"industry": "Banking", "minimum": 0, "maximum": 5, "unit": "Percent"}])
         >>>     )
         """
-        industry_constraints = pd.DataFrame(industry_constraints) \
-            if isinstance(industry_constraints, list) else industry_constraints
+        # Fast-path: if input is a list, validate keys and iterate; avoid pd.DataFrame construction for speed
+        if isinstance(industry_constraints, list):
+            expected_cols = {'industry', 'minimum', 'maximum', 'unit'}
+            # It is faster to check keys in the first element only, as all dicts should be identical
+            if not industry_constraints:
+                # If the list is empty, create empty DataFrame just as before
+                industry_constraints_df = pd.DataFrame()
+            else:
+                missing_columns = [col for col in expected_cols if col not in industry_constraints[0]]
+                if missing_columns:
+                    raise MqValueError(f"The input is missing required columns: {', '.join(missing_columns)}")
 
+                # Use a generator expression for fast iteration, replacing pd.DataFrame and to_dict
+                return [
+                    cls(
+                        industry_name=row['industry'],
+                        minimum=row['minimum'],
+                        maximum=row['maximum'],
+                        unit=OptimizationConstraintUnit(row['unit'])
+                    ) for row in industry_constraints
+                ] if industry_constraints else []
+            # If list is empty, continue below (will fall back to DataFrame check)
+            industry_constraints = industry_constraints_df
+
+        # Now handle pd.DataFrame path or empty list fallback
         missing_columns = [col for col in ['industry', 'minimum', 'maximum', 'unit']
                            if col not in industry_constraints.columns]
         if missing_columns:
             raise MqValueError(f"The input is missing required columns: {', '.join(missing_columns)}")
-        industry_constraints_as_records = industry_constraints.to_dict(orient='records')
 
-        return [cls(industry_name=row.get('industry'),
-                    minimum=row.get('minimum'),
-                    maximum=row.get('maximum'),
-                    unit=OptimizationConstraintUnit(row.get('unit'))) for row in industry_constraints_as_records]
+        # Minimize expensive .to_dict and use .itertuples for zero-copy fast access
+        return [
+            cls(
+                industry_name=row.industry,
+                minimum=row.minimum,
+                maximum=row.maximum,
+                unit=OptimizationConstraintUnit(row.unit)
+            ) for row in industry_constraints.itertuples(index=False)
+        ]
 
 
 class FactorConstraint:
