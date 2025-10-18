@@ -41,7 +41,7 @@ class User:
         self.__company = company
 
     def __eq__(self, other):
-        return self.id == other.id
+        return self.__id == other.__id
 
     def __hash__(self):
         return hash(self.id) ^ hash(self.name)
