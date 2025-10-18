@@ -216,20 +216,23 @@ class Group:
         """
         group_ids = group_ids if group_ids else []
         names = names if names else []
-        if not group_ids + names:
+        if not group_ids and not names:
             return []
-        group_ids = [id_[6:] if id_.startswith('group:') else id_ for id_ in group_ids]
-        results = GsGroupsApi.get_groups(ids=group_ids,
+        # Preallocate and slice if necessary
+        stripped_group_ids = [id_[6:] if id_.startswith('group:') else id_ for id_ in group_ids]
+        results = GsGroupsApi.get_groups(ids=stripped_group_ids,
                                          names=names)
-        all_groups = []
-        for group in results:
-            all_groups.append(Group(group_id=group.id,
-                                    name=group.name,
-                                    entitlements=Entitlements.from_target(group.entitlements)
-                                    if group.entitlements else None,
-                                    description=group.description,
-                                    tags=group.tags)
-                              )
+        # Use list comprehension to construct all_groups efficiently
+        all_groups = [
+            Group(
+                group_id=group.id,
+                name=group.name,
+                entitlements=Entitlements.from_target(group.entitlements) if getattr(group, 'entitlements', None) else None,
+                description=getattr(group, 'description', None),
+                tags=getattr(group, 'tags', None)
+            )
+            for group in results
+        ]
         return all_groups
 
     def save(self):
@@ -392,17 +395,17 @@ class EntitlementBlock:
 
 class Entitlements:
     def __init__(self,
-                 admin: EntitlementBlock = None,
-                 delete: EntitlementBlock = None,
-                 display: EntitlementBlock = None,
-                 upload: EntitlementBlock = None,
-                 edit: EntitlementBlock = None,
-                 execute: EntitlementBlock = None,
-                 plot: EntitlementBlock = None,
-                 query: EntitlementBlock = None,
-                 rebalance: EntitlementBlock = None,
-                 trade: EntitlementBlock = None,
-                 view: EntitlementBlock = None):
+                 admin: 'EntitlementBlock' = None,
+                 delete: 'EntitlementBlock' = None,
+                 display: 'EntitlementBlock' = None,
+                 upload: 'EntitlementBlock' = None,
+                 edit: 'EntitlementBlock' = None,
+                 execute: 'EntitlementBlock' = None,
+                 plot: 'EntitlementBlock' = None,
+                 query: 'EntitlementBlock' = None,
+                 rebalance: 'EntitlementBlock' = None,
+                 trade: 'EntitlementBlock' = None,
+                 view: 'EntitlementBlock' = None):
         self.__admin = admin if admin else EntitlementBlock()
         self.__delete = delete if delete else EntitlementBlock()
         self.__display = display if display else EntitlementBlock()
