@@ -45,22 +45,45 @@ class AddTradeActionImpl(ActionHandler):
         super().__init__(action)
 
     def generate_orders(self, state: dt.datetime, backtest: PredefinedAssetBacktest, info: AddTradeActionInfo):
+        # Local fast-paths and reduced attribute lookups for micro-optimization - hot loop
+        action = self.action  # reduce attribute lookup in the loop
+        priceables = action.priceables
+        source = action.name
+        trade_duration = action.trade_duration
 
         orders = []
-        for pricable in self.action.priceables:
-            quantity = pricable.instrument_quantity * 1 if info is None or info.scaling is None else info.scaling
-            orders.append(OrderAtMarket(instrument=pricable,
-                                        quantity=quantity,
-                                        generation_time=state,
-                                        execution_datetime=state,
-                                        source=self.action.name))
-            if isinstance(self.action.trade_duration, dt.timedelta):
-                # create close order
-                orders.append(OrderAtMarket(instrument=pricable,
-                                            quantity=quantity * -1,
-                                            generation_time=state,
-                                            execution_datetime=state + self.action.trade_duration,
-                                            source=self.action.name))
+        append_order = orders.append  # avoid repeated method lookup in tight loops
+
+        # Cache the isinstance result - only true or false
+        trade_duration_is_timedelta = isinstance(trade_duration, dt.timedelta)
+        get_quantity = (
+            (lambda pricable: pricable.instrument_quantity * 1)
+            if info is None or info.scaling is None
+            else (lambda pricable: info.scaling)
+        )
+
+        # Inline loop body - micro-op for performance, ensures repeated attribute access is minimized
+        for pricable in priceables:
+            quantity = get_quantity(pricable)
+
+            # use positional args to minimize kwargs handling overhead
+            append_order(OrderAtMarket(
+                pricable,
+                quantity,
+                state,  # generation_time
+                state,  # execution_datetime
+                source
+            ))
+
+            if trade_duration_is_timedelta:
+                append_order(OrderAtMarket(
+                    pricable,
+                    quantity * -1,
+                    state,  # generation_time
+                    state + trade_duration,  # execution_datetime
+                    source
+                ))
+
         return orders
 
     def apply_action(self, state: dt.datetime, backtest: PredefinedAssetBacktest, info=None):
