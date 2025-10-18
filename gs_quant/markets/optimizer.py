@@ -265,10 +265,24 @@ class AssetConstraint:
         self.__unit = value
 
     def to_dict(self):
+        asset = self.__asset
+        unit = self.__unit
+        minimum = self.__minimum
+        maximum = self.__maximum
+
+        asset_id = asset if isinstance(asset, str) else asset.get_marquee_id()
+
+        if unit == OptimizationConstraintUnit.DECIMAL:
+            min_val = minimum * 100
+            max_val = maximum * 100
+        else:
+            min_val = minimum
+            max_val = maximum
+
         return {
-            'assetId': self.asset if isinstance(self.asset, str) else self.asset.get_marquee_id(),
-            'min': self.minimum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.minimum,
-            'max': self.maximum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.maximum
+            'assetId': asset_id,
+            'min': min_val,
+            'max': max_val
         }
 
     @classmethod

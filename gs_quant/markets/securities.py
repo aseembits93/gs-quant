@@ -266,7 +266,6 @@ class Asset(Entity, metaclass=ABCMeta):
                  parameters: AssetParameters = None,
                  entity: Optional[Dict] = None):
         super().__init__(id_, EntityType.ASSET, entity=entity)
-        self.__id = id_
         self.asset_class = asset_class
         self.name = name
         self.exchange = exchange
@@ -275,7 +274,8 @@ class Asset(Entity, metaclass=ABCMeta):
         self.entity = entity
 
     def get_marquee_id(self):
-        return self.__id
+        # __id is handled by base Entity, preserving logic
+        return self._Entity__id
 
     def get_url(self) -> str:
         """
