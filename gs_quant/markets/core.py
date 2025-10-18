@@ -155,22 +155,28 @@ class PricingContext(ContextBaseWithDefault):
 
         if market:
             market_date = None
-            if isinstance(market, OverlayMarket) or isinstance(market, CloseMarket):
-                market_date = getattr(market, 'date', None) or getattr(market.market, 'date', None)
+            market_type = type(market)
+            # Optimize branching by combining isinstance and single getattr lookups
+            if market_type is OverlayMarket or market_type is CloseMarket:
+                market_date = getattr(market, 'date', None) or getattr(getattr(market, 'market', None), 'date', None)
 
-            if isinstance(market, RelativeMarket):
-                market_date = market.market.from_market.date if market.market.from_market.date > dt.date.today() \
-                    else market.market.to_market.date
+            elif market_type is RelativeMarket:
+                from_market = getattr(market.market, 'from_market', None)
+                to_market = getattr(market.market, 'to_market', None)
+                if from_market is not None and to_market is not None:
+                    from_date = getattr(from_market, 'date', None)
+                    to_date = getattr(to_market, 'date', None)
+                    # Use only if dates exist
+                    if from_date is not None and to_date is not None:
+                        market_date = from_date if from_date > dt.date.today() else to_date
 
-            if market_date:
-                if market_date > dt.date.today():
-                    raise ValueError(
-                        'The PricingContext does not support a market dated in the future. Please use the RollFwd '
-                        'Scenario to roll the pricing_date to a future date')
+            if market_date and market_date > dt.date.today():
+                raise ValueError(
+                    'The PricingContext does not support a market dated in the future. Please use the RollFwd '
+                    'Scenario to roll the pricing_date to a future date')
 
-        if not market_data_location:
-            if market:
-                market_data_location = market.location
+        if not market_data_location and market:
+            market_data_location = market.location
 
         market_data_location = get_enum_value(PricingLocation, market_data_location)
 
@@ -220,20 +226,27 @@ class PricingContext(ContextBaseWithDefault):
         attr_dict['use_historical_diddles_only'] = self.__use_historical_diddles_only
 
     def _inherited_val(self, parameter, default=None, from_active=False):
+        # Optimized: Reduce redundant getattr calls and branch ordering
+        # Fast path: avoid repeated getattr checks.
         if from_active:
             # some properties are inherited from the active context
-            if self != self.active_context and getattr(self.active_context, parameter) is not None:
-                return getattr(self.active_context, parameter)
+            active_ctx = self.active_context
+            if self != active_ctx:
+                value = getattr(active_ctx, parameter, None)
+                if value is not None:
+                    return value
         if not self.is_entered and (not PricingContext.has_prior or self is not PricingContext.prior):
-            # if not yet entered, get property from current (would-be prior) so that getters still display correctly
-            if PricingContext.current is not self and PricingContext.current and getattr(PricingContext.current,
-                                                                                         parameter) is not None:
-                return getattr(PricingContext.current, parameter)
+            curr_ctx = PricingContext.current
+            if curr_ctx is not self and curr_ctx is not None:
+                value = getattr(curr_ctx, parameter, None)
+                if value is not None:
+                    return value
         else:
-            # if entered, inherit from the prior
-            if PricingContext.has_prior and PricingContext.prior is not self and getattr(PricingContext.prior,
-                                                                                         parameter) is not None:
-                return getattr(PricingContext.prior, parameter)
+            prior_ctx = PricingContext.prior if PricingContext.has_prior else None
+            if prior_ctx is not self and prior_ctx is not None:
+                value = getattr(prior_ctx, parameter, None)
+                if value is not None:
+                    return value
         # default if nothing to inherit
         return default
 
