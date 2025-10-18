@@ -163,11 +163,17 @@ class PredefinedAssetEngine(BacktestBaseEngine):
         return all_times
 
     def _adjust_date(self, date):
-        date = (date + BDay(1) - BDay(1)).date()  # 1st move to latest weekday.
-        if self.calendars is None or self.calendars.lower() == 'weekend' or is_business_day(date, self.calendars):
-            return date
+        # Optimized: avoid costly pandas BDay usage for pure weekday adjustment
+        weekday = date.weekday()
+        if weekday < 5:
+            normalized_date = date
         else:
-            return prev_business_date(date, None if self.calendars.lower() == 'weekend' else self.calendars)
+            # If Saturday (5), subtract 1; if Sunday (6), subtract 2
+            normalized_date = date - dt.timedelta(days=weekday - 4)
+        if self.calendars is None or self.calendars.lower() == 'weekend' or is_business_day(normalized_date, self.calendars):
+            return normalized_date
+        else:
+            return prev_business_date(normalized_date, None if self.calendars.lower() == 'weekend' else self.calendars)
 
     def run_backtest(self, strategy, start, end, frequency="B", states=None, initial_value=100):
         # initialize backtest object
