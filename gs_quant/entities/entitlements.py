@@ -323,8 +323,8 @@ class Group:
 
 class EntitlementBlock:
     def __init__(self,
-                 users: List[User] = None,
-                 groups: List[Group] = None,
+                 users: List['User'] = None,
+                 groups: List['Group'] = None,
                  roles: List[str] = None,
                  unconverted_tokens: List[str] = None,
                  ):
@@ -374,20 +374,40 @@ class EntitlementBlock:
         return len(self.users + self.groups + self.roles) == 0
 
     def to_list(self, as_dicts: bool = False, action: str = None, include_all_tokens: bool = False):
+        # Optimize by pre-allocating and using list comprehensions
         if as_dicts:
-            all_entitled = []
-            for user in self.users:
-                all_entitled.append(dict(action=action, type='user', name=user.name, id=user.id))
-            for group in self.groups:
-                all_entitled.append(dict(action=action, type='group', name=group.name, id=group.id))
-            for role in self.roles:
-                all_entitled.append(dict(action=action, type='role', name=role, id=role))
-            return all_entitled
+            ulen = len(self.users)
+            glen = len(self.groups)
+            rlen = len(self.roles)
+            result = ([{'action': action, 'type': 'user', 'name': user.name, 'id': user.id}
+                       for user in self.users] +
+                      [{'action': action, 'type': 'group', 'name': group.name, 'id': group.id}
+                       for group in self.groups] +
+                      [{'action': action, 'type': 'role', 'name': role, 'id': role}
+                       for role in self.roles])
+            return result
         else:
             unconverted_tokens = self.unconverted_tokens or [] if include_all_tokens else []
-            return [f'guid:{user.id}' for user in self.users] + \
-                   [f'group:{group.id}' for group in self.groups] + \
-                   [f'role:{role}' for role in self.roles] + unconverted_tokens
+            return ([f'guid:{user.id}' for user in self.users] +
+                    [f'group:{group.id}' for group in self.groups] +
+                    [f'role:{role}' for role in self.roles] +
+                    unconverted_tokens)
+
+    @property
+    def users(self):
+        return self.__users
+
+    @property
+    def groups(self):
+        return self.__groups
+
+    @property
+    def roles(self):
+        return self.__roles
+
+    @property
+    def unconverted_tokens(self):
+        return self.__unconverted_tokens
 
 
 class Entitlements:
@@ -551,19 +571,19 @@ class Entitlements:
         return self.to_target().as_dict()
 
     def to_frame(self) -> pd.DataFrame:
+        # Single list + extend, avoid += in loop
+        all_blocks = (
+            (self.admin, 'admin'), (self.delete, 'delete'), (self.display, 'display'),
+            (self.upload, 'upload'), (self.edit, 'edit'), (self.execute, 'execute'),
+            (self.plot, 'plot'), (self.query, 'query'), (self.rebalance, 'rebalance'),
+            (self.trade, 'trade'), (self.view, 'view'),
+        )
         all_entitled = []
-        all_entitled += self.admin.to_list(True, 'admin')
-        all_entitled += self.delete.to_list(True, 'delete')
-        all_entitled += self.display.to_list(True, 'display')
-        all_entitled += self.upload.to_list(True, 'upload')
-        all_entitled += self.edit.to_list(True, 'edit')
-        all_entitled += self.execute.to_list(True, 'execute')
-        all_entitled += self.plot.to_list(True, 'plot')
-        all_entitled += self.query.to_list(True, 'query')
-        all_entitled += self.rebalance.to_list(True, 'rebalance')
-        all_entitled += self.trade.to_list(True, 'trade')
-        all_entitled += self.view.to_list(True, 'view')
-        return pd.DataFrame(all_entitled)
+        append = all_entitled.extend  # Micro-opt: local bind for loop
+        for block, action in all_blocks:
+            append(block.to_list(as_dicts=True, action=action))
+        # For large lists, use pd.DataFrame.from_records for speedup:
+        return pd.DataFrame.from_records(all_entitled)
 
     @classmethod
     def from_target(cls, entitlements: TargetEntitlements):
@@ -615,3 +635,47 @@ class Entitlements:
                 entitlement_kwargs[action] = EntitlementBlock(users=users, groups=groups, roles=roles,
                                                               unconverted_tokens=unconverted_tokens)
         return Entitlements(**entitlement_kwargs)
+
+    @property
+    def admin(self):
+        return self.__admin
+
+    @property
+    def delete(self):
+        return self.__delete
+
+    @property
+    def display(self):
+        return self.__display
+
+    @property
+    def upload(self):
+        return self.__upload
+
+    @property
+    def edit(self):
+        return self.__edit
+
+    @property
+    def execute(self):
+        return self.__execute
+
+    @property
+    def plot(self):
+        return self.__plot
+
+    @property
+    def query(self):
+        return self.__query
+
+    @property
+    def rebalance(self):
+        return self.__rebalance
+
+    @property
+    def trade(self):
+        return self.__trade
+
+    @property
+    def view(self):
+        return self.__view
