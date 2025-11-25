@@ -812,9 +812,12 @@ def weighted_sum(series: List[pd.Series], weights: list) -> pd.Series:
     )
 
     # reindex inputs and calculate
-    series = [s.reindex(cal) for s in series]
-    weights = [pd.Series(w, index=cal) for w in weights]
-    return sum(series[i] * weights[i] for i in range(len(series))) / sum(weights)
+    arr = np.column_stack([s.reindex(cal).to_numpy() for s in series])
+    weights_np = np.asarray(weights, dtype=np.float64)
+    weighted_arr = arr * weights_np
+    numerator = np.sum(weighted_arr, axis=1)
+    denominator = np.sum(weights_np)
+    return pd.Series(numerator / denominator, index=cal)
 
 
 @plot_function
