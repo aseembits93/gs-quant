@@ -533,9 +533,15 @@ class PricingContext(ContextBaseWithDefault):
         return self._inherited_val('use_historical_diddles_only', default=False)
 
     def clone(self, **kwargs):
-        clone_kwargs = {k: getattr(self, k, None) for k in signature(self.__init__).parameters.keys()}
+        # Optimization: Cache signature inspection at the class level
+        # This is safe as __init__ signature is static for the class
+        cls = self.__class__
+        if not hasattr(cls, '_init_keys'):
+            # The initialization is safe, as it only runs once per class lifetime
+            cls._init_keys = list(signature(cls.__init__).parameters.keys())
+        clone_kwargs = {k: getattr(self, k, None) for k in cls._init_keys}
         clone_kwargs.update(kwargs)
-        return self.__class__(**clone_kwargs)
+        return cls(**clone_kwargs)
 
     def _calc(self, instrument: InstrumentBase, risk_key: RiskKey) -> PricingFuture:
         pending = self.active_context.__pending
