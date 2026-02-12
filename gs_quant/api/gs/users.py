@@ -31,16 +31,19 @@ class GsUsersApi:
                   user_companies: List[str] = None,
                   limit: int = 100,
                   offset: int = 0) -> List:
-        url = '/users?'
+        params = []
         if user_ids:
-            url += f'&id={"&id=".join(user_ids)}'
+            params.append('id=' + '&id='.join(user_ids))
         if user_emails:
-            url += f'&email={"&email=".join(user_emails)}'
+            params.append('email=' + '&email='.join(user_emails))
         if user_names:
-            url += f'&name={"&name=".join(user_names)}'
+            params.append('name=' + '&name='.join(user_names))
         if user_companies:
-            url += f'&company={"&company=".join(user_companies)}'
-        return GsSession.current._get(f'{url}&limit={limit}&offset={offset}', cls=User)['results']
+            params.append('company=' + '&company='.join(user_companies))
+        params.append(f'limit={limit}')
+        params.append(f'offset={offset}')
+        url = '/users?' + '&'.join(params)
+        return GsSession.current._get(url, cls=User)['results']
 
     @classmethod
     def get_my_guid(cls) -> str:
