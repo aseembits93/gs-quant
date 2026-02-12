@@ -35,24 +35,35 @@ class GsGroupsApi:
                    offset: int = 0,
                    order_by: str = None) -> List:
         url = f'/groups?limit={limit}&offset={offset}'
+        params = []
+
         if ids:
-            url += f'&id={"&id=".join(ids)}'
+            ids_param = '&id=' + '&id='.join(ids)
+            params.append(ids_param)
         if names:
-            url += f'&name={"&name=".join(names)}'
+            names_param = '&name=' + '&name='.join(names)
+            params.append(names_param)
         if oe_ids:
-            url += f'&oeId={"&oeId=".join(oe_ids)}'
+            oe_ids_param = '&oeId=' + '&oeId='.join(oe_ids)
+            params.append(oe_ids_param)
         if owner_ids:
-            url += f'&ownerId={"&ownerId=".join(owner_ids)}'
+            owner_ids_param = '&ownerId=' + '&ownerId='.join(owner_ids)
+            params.append(owner_ids_param)
         if tags:
-            url += f'&tags={"&tags=".join(tags)}'
+            tags_param = '&tags=' + '&tags='.join(tags)
+            params.append(tags_param)
         if user_ids:
-            url += f'&userIds={"&userIds=".join(user_ids)}'
+            user_ids_param = '&userIds=' + '&userIds='.join(user_ids)
+            params.append(user_ids_param)
         if scroll_id:
-            url += f'&scrollId={scroll_id}'
+            params.append(f'&scrollId={scroll_id}')
         if scroll_time:
-            url += f'&scrollTime={scroll_time}'
+            params.append(f'&scrollTime={scroll_time}')
         if order_by:
-            url += f'&orderBy={order_by}'
+            params.append(f'&orderBy={order_by}')
+        if params:
+            # params already start with '&', so just concatenate.
+            url += ''.join(params)
         return GsSession.current._get(url, cls=Group)['results']
 
     @classmethod
