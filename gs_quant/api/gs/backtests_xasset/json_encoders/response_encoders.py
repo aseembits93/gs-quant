@@ -56,8 +56,18 @@ def decode_result_tuple(results: tuple):
 
 
 def decode_basic_bt_measure_dict(results: dict) -> Dict[FlowVolBacktestMeasure, Dict[dt.date, RiskResultWithData]]:
-    return {FlowVolBacktestMeasure(k): {dt.date.fromisoformat(d): decode_risk_result_with_data(r) for d, r in v.items()}
-            for k, v in results.items()}
+    fvb_measure = FlowVolBacktestMeasure
+    parse_date = dt.date.fromisoformat
+    decode_risk_result = decode_risk_result_with_data
+    out = {}
+    for k, v in results.items():
+        inner = {}
+        for d, r in v.items():
+            date_obj = parse_date(d)
+            result = decode_risk_result(r)
+            inner[date_obj] = result
+        out[fvb_measure(k)] = inner
+    return out
 
 
 def decode_basic_bt_transactions(results: dict, decode_instruments: bool = True) -> \
