@@ -34,12 +34,15 @@ from gs_quant.target.backtests import FlowVolBacktestMeasure
 
 
 def encode_response_obj(data: Any) -> Dict:
-    if isinstance(data, RiskMeasure):
-        return encode_risk_measure(data)
-    if isinstance(data, pd.Series):
-        return encode_series_result(data)
-    if isinstance(data, pd.DataFrame):
-        return encode_dataframe_result(data)
+    # Type dispatch to avoid multiple isinstance checks
+    encoder_map = {
+        RiskMeasure: encode_risk_measure,
+        pd.Series: encode_series_result,
+        pd.DataFrame: encode_dataframe_result,
+    }
+    encoder = encoder_map.get(type(data))
+    if encoder is not None:
+        return encoder(data)
     return data.to_dict()
 
 
