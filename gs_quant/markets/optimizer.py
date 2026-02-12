@@ -494,6 +494,12 @@ class SectorConstraint:
         self.__minimum = minimum
         self.__maximum = maximum
         self.__unit = unit
+        if unit == OptimizationConstraintUnit.DECIMAL:
+            self.__min_converted = minimum * 100
+            self.__max_converted = maximum * 100
+        else:
+            self.__min_converted = minimum
+            self.__max_converted = maximum
 
     @property
     def sector_name(self) -> str:
@@ -533,8 +539,8 @@ class SectorConstraint:
         return {
             'type': 'Sector',
             'name': self.sector_name,
-            'min': self.minimum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.minimum,
-            'max': self.maximum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.maximum
+            'min': self.__min_converted,
+            'max': self.__max_converted
         }
 
     @classmethod
