@@ -418,9 +418,17 @@ class Entitlements:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Entitlements):
             return False
-        for prop in ['admin', 'delete', 'display', 'upload', 'edit', 'execute', 'plot', 'query',
-                     'rebalance', 'view', 'trade']:
-            slf, oth = get(self, prop), get(other, prop)
+        self_blocks = (
+            self.__admin, self.__delete, self.__display, self.__upload,
+            self.__edit, self.__execute, self.__plot, self.__query,
+            self.__rebalance, self.__view, self.__trade,
+        )
+        other_blocks = (
+            other.__admin, other.__delete, other.__display, other.__upload,
+            other.__edit, other.__execute, other.__plot, other.__query,
+            other.__rebalance, other.__view, other.__trade,
+        )
+        for slf, oth in zip(self_blocks, other_blocks):
             if not (slf is None and oth is None) and not slf == oth:
                 return False
         return True
