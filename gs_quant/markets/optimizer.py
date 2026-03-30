@@ -423,11 +423,19 @@ class CountryConstraint:
         self.__unit = value
 
     def to_dict(self):
+        is_decimal = self.__unit == OptimizationConstraintUnit.DECIMAL
+        if is_decimal:
+            min_val = self.__minimum * 100
+            max_val = self.__maximum * 100
+        else:
+            min_val = self.__minimum
+            max_val = self.__maximum
+            
         return {
             'type': 'Country',
-            'name': self.country_name,
-            'min': self.minimum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.minimum,
-            'max': self.maximum * 100 if self.unit == OptimizationConstraintUnit.DECIMAL else self.maximum
+            'name': self.__country_name,
+            'min': min_val,
+            'max': max_val
         }
 
     @classmethod
